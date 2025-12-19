@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region for Lambda deployment"
   type        = string
-  default     = "us-east-1"
+  default     = "us-west-1"
 }
 
 variable "function_name" {
@@ -13,7 +13,7 @@ variable "function_name" {
 variable "lambda_runtime" {
   description = "Lambda runtime version"
   type        = string
-  default     = "nodejs18.x"
+  default     = "nodejs20.x"
 }
 
 variable "openai_api_key" {

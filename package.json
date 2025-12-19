@@ -4,9 +4,7 @@
   "description": "Utilize Amazon Alexa devices to interface with ChatGPT Conversations",
   "main": "lambda/index.js",
   "scripts": {
-    "test": "echo \"No tests specified\" && exit 0",
-    "deploy": "npm run build && zip -r function.zip lambda/ node_modules/",
-    "build": "npm install --production"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -25,5 +23,15 @@
     "ask-sdk-core": "^2.14.0",
     "ask-sdk-model": "^1.41.1",
     "openai": "^4.20.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "lambda/src/**/*.js"
+    ]
   }
 }
