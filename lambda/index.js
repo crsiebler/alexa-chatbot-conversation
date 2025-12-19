@@ -1,13 +1,19 @@
 const Alexa = require('ask-sdk-core');
 const OpenAI = require('openai');
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
-
 // Session attributes keys
 const CONVERSATION_HISTORY_KEY = 'conversationHistory';
+
+// Initialize OpenAI client lazily
+let openai = null;
+function getOpenAIClient() {
+    if (!openai) {
+        openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY
+        });
+    }
+    return openai;
+}
 
 // Launch Request Handler
 const LaunchRequestHandler = {
@@ -45,7 +51,7 @@ const ChatIntentHandler = {
         
         try {
             // Call OpenAI Chat Completions API
-            const completion = await openai.chat.completions.create({
+            const completion = await getOpenAIClient().chat.completions.create({
                 model: 'gpt-3.5-turbo',
                 messages: conversationHistory,
                 max_tokens: 150,
