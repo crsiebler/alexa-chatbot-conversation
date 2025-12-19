@@ -48,7 +48,7 @@ jobs:
         run: |
           aws lambda update-function-configuration \
             --function-name alexa-chatbot-conversation \
-            --environment "Variables={OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}}"
+            --environment "Variables={OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }},OPENAI_MODEL=${{ secrets.OPENAI_MODEL || 'gpt-3.5-turbo' }},MAX_TOKENS=${{ secrets.MAX_TOKENS || '150' }},TEMPERATURE=${{ secrets.TEMPERATURE || '0.7' }}}"
       
       - name: Publish new version
         run: |

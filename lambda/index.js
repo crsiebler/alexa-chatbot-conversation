@@ -52,10 +52,10 @@ const ChatIntentHandler = {
         try {
             // Call OpenAI Chat Completions API
             const completion = await getOpenAIClient().chat.completions.create({
-                model: 'gpt-3.5-turbo',
+                model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
                 messages: conversationHistory,
-                max_tokens: 150,
-                temperature: 0.7
+                max_tokens: parseInt(process.env.MAX_TOKENS) || 150,
+                temperature: parseFloat(process.env.TEMPERATURE) || 0.7
             });
             
             const assistantMessage = completion.choices[0].message.content;

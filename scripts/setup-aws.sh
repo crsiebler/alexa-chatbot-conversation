@@ -26,7 +26,7 @@ if [ -z "$OPENAI_API_KEY" ]; then
 fi
 
 FUNCTION_NAME=${LAMBDA_FUNCTION_NAME:-alexa-chatbot-conversation}
-RUNTIME="nodejs18.x"
+RUNTIME=${LAMBDA_RUNTIME:-nodejs18.x}
 HANDLER="index.handler"
 
 echo "Function Name: $FUNCTION_NAME"
@@ -98,7 +98,7 @@ if aws lambda get-function --function-name $FUNCTION_NAME 2>/dev/null; then
     
     aws lambda update-function-configuration \
         --function-name $FUNCTION_NAME \
-        --environment "Variables={OPENAI_API_KEY=$OPENAI_API_KEY}" \
+        --environment "Variables={OPENAI_API_KEY=$OPENAI_API_KEY,OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo},MAX_TOKENS=${MAX_TOKENS:-150},TEMPERATURE=${TEMPERATURE:-0.7}}" \
         --timeout 30 \
         --memory-size 256
 else
@@ -111,7 +111,7 @@ else
         --zip-file fileb://function.zip \
         --timeout 30 \
         --memory-size 256 \
-        --environment "Variables={OPENAI_API_KEY=$OPENAI_API_KEY}"
+        --environment "Variables={OPENAI_API_KEY=$OPENAI_API_KEY,OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo},MAX_TOKENS=${MAX_TOKENS:-150},TEMPERATURE=${TEMPERATURE:-0.7}}"
 fi
 
 echo ""

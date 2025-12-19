@@ -67,9 +67,14 @@ cp .env.example .env
 ```
 
 Edit `.env` and add:
-- `OPENAI_API_KEY`: Your OpenAI API key
+- `OPENAI_API_KEY`: Your OpenAI API key (required)
 - `AWS_REGION`: Your preferred AWS region (default: us-east-1)
 - AWS credentials for initial setup
+
+Optional OpenAI configuration:
+- `OPENAI_MODEL`: ChatGPT model to use (default: gpt-3.5-turbo)
+- `MAX_TOKENS`: Maximum response length (default: 150)
+- `TEMPERATURE`: Response creativity 0.0-1.0 (default: 0.7)
 
 ### 4. Deploy to AWS Lambda
 
@@ -141,6 +146,11 @@ This script will:
    - `AWS_REGION`: Your AWS region (e.g., us-east-1)
    - `OPENAI_API_KEY`: Your OpenAI API key
 
+Optional secrets for customization:
+   - `OPENAI_MODEL`: ChatGPT model (default: gpt-3.5-turbo)
+   - `MAX_TOKENS`: Max response tokens (default: 150)
+   - `TEMPERATURE`: Response creativity (default: 0.7)
+
 ### Automatic Deployment
 
 Every push to the `main` branch will automatically:
@@ -210,8 +220,9 @@ The Lambda function (`lambda/index.js`) includes:
 
 - Maintains up to 10 messages in conversation history
 - Automatically truncates older messages to prevent token limits
-- Uses GPT-3.5-turbo for fast, cost-effective responses
-- Configured with 150 max tokens and 0.7 temperature
+- Uses GPT-3.5-turbo by default (configurable via `OPENAI_MODEL`)
+- Configurable response parameters via environment variables
+- Lazy initialization of OpenAI client for better cold-start performance
 
 ## Troubleshooting
 
