@@ -32,16 +32,19 @@ Alexa Skill (ARN endpoint)
 
 - 🗣️ Natural conversation with ChatGPT through Alexa
 - 💬 Multi-turn dialogue support with conversation history
-- 🔄 Automatic deployment via GitHub Actions
+- 🔄 Automatic deployment via GitHub Actions with Terraform
 - 🎯 Context-aware responses
 - ⚡ Fast response times with optimized token usage
+- 🏗️ Infrastructure as Code with Terraform for reliable, repeatable deployments
+- 🔒 Secure IAM role management with least-privilege principles
 
 ## Prerequisites
 
 - Node.js 18.x or higher
-- AWS Account with Lambda access
+- AWS Account with appropriate permissions
 - OpenAI API key
 - Amazon Developer Account (for Alexa Skills)
+- [Terraform](https://www.terraform.io/downloads) >= 1.0 (for local deployment)
 
 ## Setup Instructions
 
@@ -60,36 +63,45 @@ npm install
 
 ### 3. Configure Environment Variables
 
-Copy the example environment file and fill in your credentials:
+For local Terraform deployment, copy the example variables file:
 
 ```bash
-cp .env.example .env
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
 ```
 
-Edit `.env` and add:
-- `OPENAI_API_KEY`: Your OpenAI API key (required)
-- `AWS_REGION`: Your preferred AWS region (default: us-east-1)
-- AWS credentials for initial setup
+Edit `terraform.tfvars` with your actual values:
+- `openai_api_key`: Your OpenAI API key (required)
+- `aws_region`: Your preferred AWS region (default: us-east-1)
 
 Optional OpenAI configuration:
-- `OPENAI_MODEL`: ChatGPT model to use (default: gpt-3.5-turbo)
-- `MAX_TOKENS`: Maximum response length (default: 150)
-- `TEMPERATURE`: Response creativity 0.0-1.0 (default: 0.7)
+- `openai_model`: ChatGPT model to use (default: gpt-3.5-turbo)
+- `max_tokens`: Maximum response length (default: 150)
+- `temperature`: Response creativity 0.0-1.0 (default: 0.7)
 
-### 4. Deploy to AWS Lambda
+**Note**: `terraform.tfvars` is gitignored and should never be committed.
 
-Run the setup script to create the Lambda function and necessary AWS resources:
+### 4. Deploy to AWS Lambda with Terraform
+
+#### Option A: Local Deployment
+
+Install [Terraform](https://www.terraform.io/downloads) and deploy:
 
 ```bash
-./scripts/setup-aws.sh
+cd terraform
+terraform init
+terraform plan
+terraform apply
 ```
 
-This script will:
-- Create an IAM role for Lambda execution
-- Package your code and dependencies
-- Create/update the Lambda function
-- Configure Alexa Skills Kit trigger
-- Output the Lambda ARN for your Alexa skill
+After deployment, Terraform outputs the Lambda ARN:
+```
+lambda_function_arn = "arn:aws:lambda:us-east-1:123456789012:function:alexa-chatbot-conversation"
+```
+
+#### Option B: Automated Deployment via GitHub Actions
+
+Configure GitHub Secrets (see CI/CD section below), then push to the `main` branch. The Terraform workflow will automatically deploy all infrastructure.
 
 ### 5. Create Alexa Skill
 
@@ -134,9 +146,11 @@ This script will:
    - "Tell me a joke"
    - "What is the capital of France?"
 
-## GitHub Actions Deployment
+## GitHub Actions CI/CD
 
-### Setting up CI/CD
+### Setting up Automated Deployment
+
+The repository includes a Terraform-based CI/CD pipeline that deploys on every push to `main`.
 
 1. Go to your GitHub repository settings
 2. Navigate to "Secrets and variables" → "Actions"
@@ -154,11 +168,13 @@ Optional secrets for customization:
 ### Automatic Deployment
 
 Every push to the `main` branch will automatically:
-1. Install dependencies
-2. Create a deployment package
-3. Update the Lambda function code
-4. Update environment variables
-5. Publish a new version
+1. Install npm dependencies
+2. Initialize Terraform
+3. Plan infrastructure changes
+4. Apply changes to AWS (Lambda function, IAM role, permissions)
+5. Output the Lambda ARN
+
+The Terraform workflow is idempotent and safe to run multiple times.
 
 ## Usage
 
@@ -188,20 +204,28 @@ The skill maintains context within a session, so you can ask follow-up questions
 alexa-chatbot-conversation/
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml           # GitHub Actions workflow
+│       └── terraform-deploy.yml     # Terraform CI/CD workflow
 ├── lambda/
-│   └── index.js                 # Lambda function handler
+│   └── index.js                     # Lambda function handler
 ├── skill-package/
-│   ├── skill.json               # Skill manifest
+│   ├── skill.json                   # Skill manifest
+│   ├── README.md                    # Configuration guide
 │   └── interactionModels/
 │       └── custom/
-│           └── en-US.json       # Interaction model
+│           └── en-US.json           # Interaction model
+├── terraform/
+│   ├── main.tf                      # Terraform provider config
+│   ├── variables.tf                 # Input variables
+│   ├── outputs.tf                   # Output values
+│   ├── lambda.tf                    # Lambda & IAM resources
+│   ├── terraform.tfvars.example     # Example variables
+│   └── README.md                    # Terraform documentation
 ├── scripts/
-│   └── setup-aws.sh             # AWS setup script
-├── .env.example                 # Environment variables template
-├── .gitignore                   # Git ignore file
-├── package.json                 # Node.js dependencies
-└── README.md                    # This file
+│   └── setup-aws.sh                 # Legacy bash setup script
+├── .env.example                     # Environment variables template
+├── .gitignore                       # Git ignore file
+├── package.json                     # Node.js dependencies
+└── README.md                        # This file
 ```
 
 ## Lambda Function Details
@@ -250,6 +274,25 @@ aws logs tail /aws/lambda/alexa-chatbot-conversation --follow
 - **AWS Lambda**: Free tier includes 1M requests/month
 - **OpenAI API**: Pay per token usage (GPT-3.5-turbo is ~$0.002 per 1K tokens)
 - **Alexa Skills**: Free to develop and publish
+- **Terraform State**: Consider using S3 backend (pennies per month)
+
+## Infrastructure Management
+
+This project uses **Terraform** for infrastructure as code. Benefits include:
+
+- **Declarative Configuration**: Define desired state, not imperative steps
+- **Version Control**: Track infrastructure changes in Git
+- **Idempotent**: Safe to run multiple times
+- **State Management**: Tracks actual vs. desired infrastructure
+- **Collaboration**: Team members can review infrastructure changes in PRs
+
+### Legacy Bash Script
+
+The `scripts/setup-aws.sh` file is kept for reference but is deprecated. Use Terraform instead for:
+- Better state tracking
+- Easier rollback
+- More reliable deployments
+- Proper IAM management
 
 ## Security Notes
 
