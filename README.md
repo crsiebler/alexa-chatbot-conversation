@@ -37,10 +37,13 @@ Alexa Skill (ARN endpoint)
 - ⚡ Fast response times with optimized token usage
 - 🏗️ Infrastructure as Code with Terraform for reliable, repeatable deployments
 - 🔒 Secure IAM role management with least-privilege principles
+- 🧩 Modular architecture with dependency injection for easy testing
+- ✅ Comprehensive unit and integration tests
+- 🚀 Latest Node.js 20.x runtime for optimal performance
 
 ## Prerequisites
 
-- Node.js 18.x or higher
+- Node.js 18.x or higher (Lambda uses 20.x)
 - AWS Account with appropriate permissions
 - OpenAI API key
 - Amazon Developer Account (for Alexa Skills)
@@ -206,7 +209,26 @@ alexa-chatbot-conversation/
 │   └── workflows/
 │       └── terraform-deploy.yml     # Terraform CI/CD workflow
 ├── lambda/
-│   └── index.js                     # Lambda function handler
+│   ├── index.js                     # Lambda entry point
+│   └── src/
+│       ├── DependencyContainer.js   # Dependency injection container
+│       ├── handlers/                # Alexa request handlers
+│       │   ├── LaunchRequestHandler.js
+│       │   ├── ChatIntentHandler.js
+│       │   ├── HelpIntentHandler.js
+│       │   ├── CancelAndStopIntentHandler.js
+│       │   ├── FallbackIntentHandler.js
+│       │   ├── SessionEndedRequestHandler.js
+│       │   └── ErrorHandler.js
+│       ├── services/                # Business logic
+│       │   └── ConversationService.js
+│       └── repositories/            # Data access layer
+│           └── OpenAIRepository.js
+├── tests/
+│   ├── unit/                        # Unit tests
+│   │   └── ConversationService.test.js
+│   └── integration/                 # Integration tests
+│       └── lambda.test.js
 ├── skill-package/
 │   ├── skill.json                   # Skill manifest
 │   ├── README.md                    # Configuration guide
@@ -220,17 +242,33 @@ alexa-chatbot-conversation/
 │   ├── lambda.tf                    # Lambda & IAM resources
 │   ├── terraform.tfvars.example     # Example variables
 │   └── README.md                    # Terraform documentation
-├── scripts/
-│   └── setup-aws.sh                 # Legacy bash setup script
+├── docs/
+│   └── FUTURE_ENHANCEMENTS.md       # Future feature documentation
 ├── .env.example                     # Environment variables template
 ├── .gitignore                       # Git ignore file
 ├── package.json                     # Node.js dependencies
 └── README.md                        # This file
 ```
 
-## Lambda Function Details
+## Lambda Function Architecture
 
-The Lambda function (`lambda/index.js`) includes:
+The Lambda function uses a modular, testable architecture with dependency injection:
+
+### Core Components
+
+- **DependencyContainer**: Manages dependency injection and service creation
+- **Handlers**: Individual handler classes for each Alexa request type
+- **ConversationService**: Business logic for managing conversations
+- **OpenAIRepository**: Data access layer for OpenAI API calls
+
+### Design Patterns
+
+- **Dependency Injection**: All dependencies injected through the container
+- **Repository Pattern**: OpenAI API calls abstracted behind repository interface
+- **Single Responsibility**: Each handler/service has one clear purpose
+- **Testability**: All components can be unit tested with mocked dependencies
+
+### Request Handlers
 
 - **LaunchRequestHandler**: Welcomes users when they open the skill
 - **ChatIntentHandler**: Processes user messages and queries ChatGPT
@@ -246,7 +284,58 @@ The Lambda function (`lambda/index.js`) includes:
 - Automatically truncates older messages to prevent token limits
 - Uses GPT-3.5-turbo by default (configurable via `OPENAI_MODEL`)
 - Configurable response parameters via environment variables
-- Lazy initialization of OpenAI client for better cold-start performance
+- OpenAI client injected as dependency for easy testing
+
+## Testing
+
+The project includes comprehensive unit and integration tests using Jest.
+
+### Running Tests
+
+```bash
+npm test
+```
+
+### Test Structure
+
+- **Unit Tests** (`tests/unit/`): Test individual components with mocked dependencies
+  - `ConversationService.test.js`: Tests conversation logic and history management
+  
+- **Integration Tests** (`tests/integration/`): Test Lambda handler with actual Alexa events
+  - `lambda.test.js`: Tests complete request/response flow for all intents
+
+### Local Testing
+
+You can test the Lambda function locally by calling it directly:
+
+```javascript
+const { handler } = require('./lambda/index');
+
+// Create a mock Alexa LaunchRequest event
+const event = {
+  version: '1.0',
+  session: { /* ... */ },
+  request: {
+    type: 'LaunchRequest',
+    // ...
+  }
+};
+
+// Invoke the handler
+handler(event, {}, (error, response) => {
+  console.log(response);
+});
+```
+
+### Test Coverage
+
+Run tests with coverage:
+
+```bash
+npm test -- --coverage
+```
+
+Coverage reports are generated in the `coverage/` directory.
 
 ## Troubleshooting
 
