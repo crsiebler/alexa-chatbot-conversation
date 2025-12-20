@@ -1,4 +1,4 @@
-name: Deploy Infrastructure with Terraform
+name: Deploy Infrastructure and Alexa Skill
 
 on:
   push:
@@ -7,52 +7,55 @@ on:
   workflow_dispatch:
 
 jobs:
-  terraform:
+  deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    
-    defaults:
-      run:
-        working-directory: terraform
-    
+
+    env:
+      LAMBDA_ARN: ""
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
-      
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
       - name: Install npm dependencies
         working-directory: .
         run: npm ci
-      
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
-      
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      
+
       - name: Terraform Init
+        working-directory: terraform
         run: terraform init
-      
+
       - name: Terraform Format Check
+        working-directory: terraform
         run: terraform fmt -check
         continue-on-error: true
-      
+
       - name: Terraform Validate
+        working-directory: terraform
         run: terraform validate
-      
+
       - name: Terraform Plan
+        working-directory: terraform
         run: |
           terraform plan \
             -var="aws_region=${{ secrets.AWS_REGION }}" \
@@ -61,11 +64,63 @@ jobs:
             -var="max_tokens=${{ secrets.MAX_TOKENS || 150 }}" \
             -var="temperature=${{ secrets.TEMPERATURE || 0.7 }}" \
             -out=tfplan
-      
+
       - name: Terraform Apply
+        working-directory: terraform
         run: terraform apply -auto-approve tfplan
-      
-      - name: Output Lambda ARN
+
+      - name: Capture Lambda ARN
+        working-directory: terraform
         run: |
-          echo "Lambda Function ARN:"
-          terraform output -raw lambda_function_arn
+          LAMBDA_ARN=$(terraform output -raw lambda_function_arn)
+          echo "LAMBDA_ARN=$LAMBDA_ARN" >> $GITHUB_ENV
+          echo "Lambda Function ARN: $LAMBDA_ARN"
+
+      # Deploy Alexa Skill with ASK CLI (only if secrets are configured)
+      - name: Install ASK CLI
+        if: ${{ secrets.ASK_ACCESS_TOKEN != '' && secrets.ASK_REFRESH_TOKEN != '' && secrets.ASK_VENDOR_ID != '' }}
+        run: npm install -g ask-cli
+
+      - name: Configure ASK CLI
+        if: ${{ secrets.ASK_ACCESS_TOKEN != '' && secrets.ASK_REFRESH_TOKEN != '' && secrets.ASK_VENDOR_ID != '' }}
+        run: |
+          mkdir -p ~/.ask
+          cat > ~/.ask/cli_config << EOF
+          {
+            "profiles": {
+              "default": {
+                "aws_profile": "ask_cli_default",
+                "token": {
+                  "access_token": "${{ secrets.ASK_ACCESS_TOKEN }}",
+                  "refresh_token": "${{ secrets.ASK_REFRESH_TOKEN }}",
+                  "token_type": "bearer",
+                  "expires_in": 3600,
+                  "expires_at": "$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%S.000Z)"
+                },
+                "vendor_id": "${{ secrets.ASK_VENDOR_ID }}"
+              }
+            }
+          }
+          EOF
+
+      - name: Update Skill Manifest with Lambda ARN
+        if: ${{ secrets.ASK_ACCESS_TOKEN != '' && secrets.ASK_REFRESH_TOKEN != '' && secrets.ASK_VENDOR_ID != '' }}
+        run: |
+          jq --arg arn "$LAMBDA_ARN" '.manifest.apis.custom.endpoint.uri = $arn' \
+            skill-package/skill.json > skill-package/skill.json.tmp
+          mv skill-package/skill.json.tmp skill-package/skill.json
+
+      - name: Deploy Alexa Skill
+        if: ${{ secrets.ASK_ACCESS_TOKEN != '' && secrets.ASK_REFRESH_TOKEN != '' && secrets.ASK_VENDOR_ID != '' }}
+        run: |
+          if [ -z "${{ secrets.ASK_SKILL_ID }}" ]; then
+            echo "Creating new skill..."
+            ask deploy --ignore-hash
+          else
+            echo "Updating existing skill..."
+            ask deploy --skill-id ${{ secrets.ASK_SKILL_ID }} --ignore-hash
+          fi
+
+      - name: Get Skill Status
+        if: ${{ secrets.ASK_SKILL_ID != '' }}
+        run: ask api get-skill-status --skill-id ${{ secrets.ASK_SKILL_ID }} || echo "Skill status check skipped"
