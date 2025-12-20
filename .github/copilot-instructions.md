@@ -6,6 +6,10 @@ This is an AWS Lambda-based Alexa skill that integrates with OpenAI's ChatGPT AP
 
 **Key Flow**: Alexa Device → ASK SDK → Lambda Handler → ConversationService → OpenAIRepository → OpenAI API
 
+**Deployment Status**: ✅ Fully automated CI/CD pipeline with Terraform + ASK CLI  
+**Lambda ARN**: `arn:aws:lambda:us-west-2:981374387644:function:alexa-chatbot-conversation`  
+**Runtime**: Node.js 20.x
+
 ## Architecture Patterns
 
 ### Dependency Injection Container
@@ -71,6 +75,13 @@ mockOpenAIRepository = {
 - Use Lambda callback pattern: `handler(event, {}, (error, response) => ...)`
 
 **Run tests**: `npm test` (uses Jest as configured in [package.json](package.json))
+
+## Development Environment
+
+- **Node.js Version**: 20.x (specified in [.nvmrc](.nvmrc) and [package.json](package.json))
+- **Package Manager**: npm
+- **Use nvm**: Run `nvm use` to switch to the correct Node version
+- **AWS Region**: us-west-2 (configured in Terraform variables)
 
 ## Environment Variables
 
@@ -178,8 +189,10 @@ The skill manifest and interaction model are in [skill-package/](skill-package/)
 
 1. Run `ask configure` locally to authenticate
 2. Extract tokens from `~/.ask/cli_config`
-3. Add GitHub Secrets: `ASK_ACCESS_TOKEN`, `ASK_REFRESH_TOKEN`, `ASK_VENDOR_ID`
+3. Add GitHub Secrets: `ASK_ACCESS_TOKEN`, `ASK_REFRESH_TOKEN`, `ASK_VENDOR_ID`, `ASK_SKILL_ID`
 4. See detailed guide: [docs/ASK_CLI_SETUP.md](docs/ASK_CLI_SETUP.md)
+
+**Note**: All secrets are now configured and the full CI/CD pipeline is operational.
 
 ### Debugging Lambda Locally
 
