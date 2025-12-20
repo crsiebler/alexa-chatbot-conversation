@@ -2,7 +2,7 @@
   "askcliStatesVersion": "2020-03-31",
   "profiles": {
     "default": {
-      "skillId": "",
+      "skillId": "amzn1.ask.skill.8f78057b-a2b4-4386-b4c4-c99d1f0244d7",
       "skillMetadata": {
         "lastDeployHash": ""
       },
@@ -15,7 +15,7 @@
         "userConfig": {
           "runtime": "nodejs20.x",
           "handler": "index.handler",
-          "awsRegion": "us-east-1"
+          "awsRegion": "us-west-2"
         }
       }
     }
