@@ -117,15 +117,19 @@ jobs:
             skill-package/skill.json > skill-package/skill.json.tmp
           mv skill-package/skill.json.tmp skill-package/skill.json
 
+      - name: Configure ASK Skill ID
+        run: |
+          mkdir -p .ask
+          # Update ask-states.json with the skill ID if it exists
+          jq --arg skillId "${{ secrets.ASK_SKILL_ID }}" \
+            '.profiles.default.skillId = $skillId' \
+            .ask/ask-states.json > .ask/ask-states.json.tmp
+          mv .ask/ask-states.json.tmp .ask/ask-states.json
+
       - name: Deploy Alexa Skill
         run: |
-          if [ -z "${{ secrets.ASK_SKILL_ID }}" ]; then
-            echo "Creating new skill..."
-            ask deploy --ignore-hash
-          else
-            echo "Updating existing skill..."
-            ask deploy --skill-id ${{ secrets.ASK_SKILL_ID }} --ignore-hash
-          fi
+          echo "Deploying Alexa skill..."
+          ask deploy --ignore-hash
 
       - name: Get Skill Status
         run: ask api get-skill-status --skill-id ${{ secrets.ASK_SKILL_ID }} || echo "Skill status check skipped"
