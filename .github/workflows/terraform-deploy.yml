@@ -78,11 +78,11 @@ jobs:
 
       # Deploy Alexa Skill with ASK CLI (only if secrets are configured)
       - name: Install ASK CLI
-        if: ${{ secrets.ASK_ACCESS_TOKEN != '' && secrets.ASK_REFRESH_TOKEN != '' && secrets.ASK_VENDOR_ID != '' }}
+        if: secrets.ASK_ACCESS_TOKEN != '' && secrets.ASK_REFRESH_TOKEN != '' && secrets.ASK_VENDOR_ID != ''
         run: npm install -g ask-cli
 
       - name: Configure ASK CLI
-        if: ${{ secrets.ASK_ACCESS_TOKEN != '' && secrets.ASK_REFRESH_TOKEN != '' && secrets.ASK_VENDOR_ID != '' }}
+        if: secrets.ASK_ACCESS_TOKEN != '' && secrets.ASK_REFRESH_TOKEN != '' && secrets.ASK_VENDOR_ID != ''
         run: |
           mkdir -p ~/.ask
           cat > ~/.ask/cli_config << EOF
@@ -104,14 +104,14 @@ jobs:
           EOF
 
       - name: Update Skill Manifest with Lambda ARN
-        if: ${{ secrets.ASK_ACCESS_TOKEN != '' && secrets.ASK_REFRESH_TOKEN != '' && secrets.ASK_VENDOR_ID != '' }}
+        if: secrets.ASK_ACCESS_TOKEN != '' && secrets.ASK_REFRESH_TOKEN != '' && secrets.ASK_VENDOR_ID != ''
         run: |
           jq --arg arn "$LAMBDA_ARN" '.manifest.apis.custom.endpoint.uri = $arn' \
             skill-package/skill.json > skill-package/skill.json.tmp
           mv skill-package/skill.json.tmp skill-package/skill.json
 
       - name: Deploy Alexa Skill
-        if: ${{ secrets.ASK_ACCESS_TOKEN != '' && secrets.ASK_REFRESH_TOKEN != '' && secrets.ASK_VENDOR_ID != '' }}
+        if: secrets.ASK_ACCESS_TOKEN != '' && secrets.ASK_REFRESH_TOKEN != '' && secrets.ASK_VENDOR_ID != ''
         run: |
           if [ -z "${{ secrets.ASK_SKILL_ID }}" ]; then
             echo "Creating new skill..."
@@ -122,5 +122,5 @@ jobs:
           fi
 
       - name: Get Skill Status
-        if: ${{ secrets.ASK_SKILL_ID != '' }}
+        if: secrets.ASK_SKILL_ID != ''
         run: ask api get-skill-status --skill-id ${{ secrets.ASK_SKILL_ID }} || echo "Skill status check skipped"
