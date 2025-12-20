@@ -53,42 +53,6 @@ jobs:
       - name: Terraform Validate
         working-directory: terraform
         run: terraform validate
-      
-      # Import existing resources if they exist
-      - name: Import Existing Resources
-        working-directory: terraform
-        run: |
-          # Import IAM role if it exists
-          if aws iam get-role --role-name alexa-chatbot-conversation-execution-role 2>/dev/null; then
-            echo "Importing existing IAM role..."
-            terraform import -var="aws_region=${{ secrets.AWS_REGION }}" \
-              -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
-              aws_iam_role.lambda_execution_role alexa-chatbot-conversation-execution-role || true
-          fi
-          
-          # Import Lambda function if it exists
-          if aws lambda get-function --function-name alexa-chatbot-conversation --region ${{ secrets.AWS_REGION }} 2>/dev/null; then
-            echo "Importing existing Lambda function..."
-            terraform import -var="aws_region=${{ secrets.AWS_REGION }}" \
-              -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
-              aws_lambda_function.alexa_chatbot alexa-chatbot-conversation || true
-          fi
-          
-          # Import IAM role policy attachment if it exists
-          if aws iam list-attached-role-policies --role-name alexa-chatbot-conversation-execution-role 2>/dev/null | grep -q "AWSLambdaBasicExecutionRole"; then
-            echo "Importing IAM policy attachment..."
-            terraform import -var="aws_region=${{ secrets.AWS_REGION }}" \
-              -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
-              aws_iam_role_policy_attachment.lambda_basic_execution alexa-chatbot-conversation-execution-role/arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole || true
-          fi
-          
-          # Import Lambda permission if it exists
-          if aws lambda get-policy --function-name alexa-chatbot-conversation --region ${{ secrets.AWS_REGION }} 2>/dev/null | grep -q "AllowExecutionFromAlexa"; then
-            echo "Importing Lambda permission..."
-            terraform import -var="aws_region=${{ secrets.AWS_REGION }}" \
-              -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
-              aws_lambda_permission.alexa_skill_trigger alexa-chatbot-conversation/AllowExecutionFromAlexa || true
-          fi
 
       - name: Terraform Plan
         working-directory: terraform
