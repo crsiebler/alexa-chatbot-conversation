@@ -13,7 +13,6 @@
             }
           ],
           "samples": [
-            "{message}",
             "ask {message}",
             "tell me {message}",
             "what is {message}",
