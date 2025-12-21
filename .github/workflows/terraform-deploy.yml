@@ -103,7 +103,7 @@ jobs:
                   "refresh_token": "${{ secrets.ASK_REFRESH_TOKEN }}",
                   "token_type": "bearer",
                   "expires_in": 3600,
-                  "expires_at": "$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%S.000Z)"
+                  "expires_at": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
                 },
                 "vendor_id": "${{ secrets.ASK_VENDOR_ID }}"
               }
