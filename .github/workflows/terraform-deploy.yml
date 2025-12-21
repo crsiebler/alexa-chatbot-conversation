@@ -25,9 +25,9 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "npm"
 
-      - name: Install npm dependencies
-        working-directory: .
-        run: npm ci
+      - name: Install Lambda dependencies
+        working-directory: lambda
+        run: npm ci --production
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
