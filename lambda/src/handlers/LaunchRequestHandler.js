@@ -10,11 +10,11 @@ class LaunchRequestHandler {
     }
 
     handle(handlerInput) {
-        const speakOutput = 'Welcome to ChatGPT Conversation! You can ask me anything, and I\'ll use ChatGPT to respond. What would you like to talk about?';
+        const speakOutput = 'Go ahead.';
         
         return handlerInput.responseBuilder
             .speak(speakOutput)
-            .reprompt('What would you like to ask?')
+            .reprompt('Go ahead.')
             .getResponse();
     }
 }

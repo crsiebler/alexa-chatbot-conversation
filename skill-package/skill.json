@@ -5,9 +5,9 @@
         "en-US": {
           "summary": "Chat with ChatGPT through your Alexa device",
           "examplePhrases": [
-            "Alexa, open chat conversation",
-            "Alexa, ask chat conversation to tell me a joke",
-            "Alexa, ask chat conversation what is the weather like"
+            "Alexa, open chat bot",
+            "Alexa, ask chat bot to tell me a joke",
+            "Alexa, ask chat bot what is the weather like"
           ],
           "keywords": [
             "chatgpt",
