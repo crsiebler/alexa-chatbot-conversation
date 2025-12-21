@@ -23,11 +23,26 @@ class OpenAIRepository {
             temperature = parseFloat(process.env.TEMPERATURE) || 0.7
         } = options;
 
+        console.log('OpenAI API Call:', {
+            model,
+            messageCount: messages.length,
+            max_tokens,
+            temperature
+        });
+
         const completion = await this.client.chat.completions.create({
             model,
             messages,
             max_tokens,
             temperature
+        });
+
+        console.log('OpenAI Response:', {
+            id: completion.id,
+            model: completion.model,
+            promptTokens: completion.usage?.prompt_tokens,
+            completionTokens: completion.usage?.completion_tokens,
+            totalTokens: completion.usage?.total_tokens
         });
 
         return completion.choices[0].message.content;
