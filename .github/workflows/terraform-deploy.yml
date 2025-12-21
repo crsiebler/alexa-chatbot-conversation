@@ -55,18 +55,6 @@ jobs:
         working-directory: terraform
         run: terraform validate
 
-      # Import existing resources (bootstrap only - remove after remote state is enabled)
-      - name: Import existing resources
-        working-directory: terraform
-        run: |
-          echo "Importing existing resources if they exist..."
-          terraform import -var="aws_region=${{ secrets.AWS_REGION }}" -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" aws_iam_role.lambda_execution_role alexa-chatbot-conversation-execution-role || echo "IAM role already imported or doesn't exist"
-          terraform import -var="aws_region=${{ secrets.AWS_REGION }}" -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" aws_iam_role_policy_attachment.lambda_basic_execution alexa-chatbot-conversation-execution-role/arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole || echo "Policy attachment already imported or doesn't exist"
-          terraform import -var="aws_region=${{ secrets.AWS_REGION }}" -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" aws_lambda_function.alexa_chatbot alexa-chatbot-conversation || echo "Lambda function already imported or doesn't exist"
-          terraform import -var="aws_region=${{ secrets.AWS_REGION }}" -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" aws_lambda_permission.alexa_skill_trigger alexa-chatbot-conversation/AllowExecutionFromAlexa || echo "Lambda permission already imported or doesn't exist"
-          terraform import -var="aws_region=${{ secrets.AWS_REGION }}" -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" aws_s3_bucket.terraform_state alexa-chatbot-terraform-state-981374387644 || echo "S3 bucket already imported or doesn't exist"
-          terraform import -var="aws_region=${{ secrets.AWS_REGION }}" -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" aws_dynamodb_table.terraform_lock alexa-chatbot-terraform-lock || echo "DynamoDB table already imported or doesn't exist"
-
       - name: Terraform Plan
         working-directory: terraform
         run: |
