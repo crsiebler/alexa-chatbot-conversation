@@ -21,12 +21,12 @@ Alexa speaks response
 ```
 GitHub (main branch)
    ↓
-GitHub Actions
-   ↓
-AWS Lambda (Node.js)
-   ↓
-Alexa Skill (ARN endpoint)
+GitHub Actions (CI/CD)
+   ├─ Terraform → AWS Lambda (Node.js)
+   └─ ASK CLI → Alexa Skill (manifest + interaction model)
 ```
+
+**Hybrid Approach**: Terraform manages AWS infrastructure (Lambda, IAM), ASK CLI manages Alexa skill configuration. Both deploy automatically on push to `main`.
 
 ## Features
 
@@ -43,11 +43,12 @@ Alexa Skill (ARN endpoint)
 
 ## Prerequisites
 
-- Node.js 18.x or higher (Lambda uses 20.x)
+- Node.js 20.x (specified in `.nvmrc`)
 - AWS Account with appropriate permissions
 - OpenAI API key
 - Amazon Developer Account (for Alexa Skills)
 - [Terraform](https://www.terraform.io/downloads) >= 1.0 (for local deployment)
+- [ASK CLI](https://developer.amazon.com/en-US/docs/alexa/smapi/quick-start-alexa-skills-kit-command-line-interface.html) (for local skill deployment)
 
 ## Setup Instructions
 
@@ -126,7 +127,7 @@ Configure GitHub Secrets (see CI/CD section below), then push to the `main` bran
 4. Paste and save
 
 #### Manual Configuration (Option 2)
-1. Set invocation name: "chat conversation"
+1. Set invocation name: "chat bot"
 2. Create a custom intent named "ChatIntent" with:
    - Slot name: `message`
    - Slot type: `AMAZON.SearchQuery`
@@ -145,9 +146,38 @@ Configure GitHub Secrets (see CI/CD section below), then push to the `main` bran
 2. Go to the "Test" tab
 3. Enable testing for "Development"
 4. Try these test phrases:
-   - "Open chat conversation"
+   - "Open chat bot"
    - "Tell me a joke"
    - "What is the capital of France?"
+
+## NPM Scripts
+
+Convenient commands for development and deployment:
+
+### Testing
+```bash
+npm test                  # Run all tests
+npm run test:watch        # Run tests in watch mode
+npm run test:coverage     # Generate coverage report
+```
+
+### Skill Deployment
+```bash
+npm run deploy:skill      # Deploy skill manifest + interaction model
+npm run deploy:skill-only # Deploy skill manifest only
+npm run deploy:model      # Deploy interaction model only
+npm run skill:dialog      # Interactive testing in terminal
+npm run skill:validate    # Check skill for certification issues
+npm run skill:status      # View skill deployment status
+```
+
+### Terraform (Local)
+```bash
+npm run tf:init          # Initialize Terraform
+npm run tf:plan          # Preview infrastructure changes
+npm run tf:apply         # Apply infrastructure changes
+npm run tf:destroy       # Tear down infrastructure
+```
 
 ## GitHub Actions CI/CD
 
@@ -158,32 +188,54 @@ The repository includes a Terraform-based CI/CD pipeline that deploys on every p
 1. Go to your GitHub repository settings
 2. Navigate to "Secrets and variables" → "Actions"
 3. Add the following secrets:
+
+**AWS Credentials:**
    - `AWS_ACCESS_KEY_ID`: Your AWS access key
    - `AWS_SECRET_ACCESS_KEY`: Your AWS secret key
-   - `AWS_REGION`: Your AWS region (e.g., us-east-1)
+   - `AWS_REGION`: Your AWS region (e.g., us-west-2)
+
+**OpenAI:**
    - `OPENAI_API_KEY`: Your OpenAI API key
+
+**ASK CLI (for automated skill deployment):**
+   - `ASK_ACCESS_TOKEN`: From `~/.ask/cli_config`
+   - `ASK_REFRESH_TOKEN`: From `~/.ask/cli_config`
+   - `ASK_VENDOR_ID`: From `~/.ask/cli_config`
 
 Optional secrets for customization:
    - `OPENAI_MODEL`: ChatGPT model (default: gpt-3.5-turbo)
    - `MAX_TOKENS`: Max response tokens (default: 150)
    - `TEMPERATURE`: Response creativity (default: 0.7)
 
+**Note**: See [docs/ASK_CLI_SETUP.md](docs/ASK_CLI_SETUP.md) for detailed ASK CLI authentication setup.
+
 ### Automatic Deployment
 
 Every push to the `main` branch will automatically:
-1. Install npm dependencies
-2. Initialize Terraform
-3. Plan infrastructure changes
-4. Apply changes to AWS (Lambda function, IAM role, permissions)
-5. Output the Lambda ARN
 
-The Terraform workflow is idempotent and safe to run multiple times.
+**Infrastructure (Terraform):**
+1. Install Lambda dependencies (`npm ci --production`)
+2. Initialize Terraform (with S3 remote state backend)
+3. Import existing resources (bootstrap phase)
+4. Plan infrastructure changes
+5. Apply changes to AWS (Lambda function, IAM role, S3 bucket, DynamoDB table)
+6. Capture Lambda ARN
+
+**Skill Configuration (ASK CLI):**
+7. Install ASK CLI
+8. Configure credentials from GitHub Secrets
+9. Update skill manifest with Lambda ARN
+10. Deploy skill manifest and interaction model to Alexa
+
+The workflow is idempotent and safe to run multiple times. Terraform uses S3 for remote state storage with DynamoDB locking for team collaboration.
 
 ## Usage
 
 ### Starting a Conversation
 
-"Alexa, open chat conversation"
+"Alexa, open chat bot"
+
+Alexa will respond with "Go ahead." and wait for your question.
 
 ### Asking Questions
 
@@ -206,8 +258,11 @@ The skill maintains context within a session, so you can ask follow-up questions
 ```
 alexa-chatbot-conversation/
 ├── .github/
+│   ├── copilot-instructions.md      # AI coding instructions
 │   └── workflows/
-│       └── terraform-deploy.yml     # Terraform CI/CD workflow
+│       └── terraform-deploy.yml     # Terraform + ASK CLI CI/CD workflow
+├── .ask/
+│   └── ask-states.json              # ASK CLI state (skill ID)
 ├── lambda/
 │   ├── index.js                     # Lambda entry point
 │   └── src/
@@ -237,13 +292,24 @@ alexa-chatbot-conversation/
 │           └── en-US.json           # Interaction model
 ├── terraform/
 │   ├── main.tf                      # Terraform provider config
+│   ├── backend.tf                   # S3 remote state configuration
 │   ├── variables.tf                 # Input variables
 │   ├── outputs.tf                   # Output values
 │   ├── lambda.tf                    # Lambda & IAM resources
+│   ├── state-infrastructure.tf      # S3 bucket & DynamoDB table for state
 │   ├── terraform.tfvars.example     # Example variables
 │   └── README.md                    # Terraform documentation
 ├── docs/
+│   ├── ASK_CLI_SETUP.md             # ASK CLI authentication guide
+│   ├── REMOTE_STATE_SETUP.md        # Terraform remote state setup
 │   └── FUTURE_ENHANCEMENTS.md       # Future feature documentation
+├── skill-package/
+│   └── assets/
+│       └── images/
+│           ├── small-icon.png       # 108x108 skill icon
+│           └── large-icon.png       # 512x512 skill icon
+├── ask-resources.json               # ASK CLI project configuration
+├── .nvmrc                           # Node.js version specification
 ├── .env.example                     # Environment variables template
 ├── .gitignore                       # Git ignore file
 ├── package.json                     # Node.js dependencies
@@ -270,7 +336,7 @@ The Lambda function uses a modular, testable architecture with dependency inject
 
 ### Request Handlers
 
-- **LaunchRequestHandler**: Welcomes users when they open the skill
+- **LaunchRequestHandler**: Responds with "Go ahead." when users open the skill
 - **ChatIntentHandler**: Processes user messages and queries ChatGPT
 - **HelpIntentHandler**: Provides help information
 - **CancelAndStopIntentHandler**: Handles exit requests
@@ -363,25 +429,29 @@ aws logs tail /aws/lambda/alexa-chatbot-conversation --follow
 - **AWS Lambda**: Free tier includes 1M requests/month
 - **OpenAI API**: Pay per token usage (GPT-3.5-turbo is ~$0.002 per 1K tokens)
 - **Alexa Skills**: Free to develop and publish
-- **Terraform State**: Consider using S3 backend (pennies per month)
+- **S3 Remote State**: Minimal cost (~$0.02/month for state storage)
+- **DynamoDB State Lock**: Free tier covers typical usage (25 GB storage, 25 WCU/RCU)
 
 ## Infrastructure Management
 
-This project uses **Terraform** for infrastructure as code. Benefits include:
+This project uses **Terraform with S3 remote state backend** for infrastructure as code. Benefits include:
 
 - **Declarative Configuration**: Define desired state, not imperative steps
 - **Version Control**: Track infrastructure changes in Git
 - **Idempotent**: Safe to run multiple times
-- **State Management**: Tracks actual vs. desired infrastructure
+- **Remote State**: S3 backend with DynamoDB locking for team collaboration
+- **State Persistence**: CI/CD pipeline maintains state between deployments
 - **Collaboration**: Team members can review infrastructure changes in PRs
 
-### Legacy Bash Script
+### Remote State Setup
 
-The `scripts/setup-aws.sh` file is kept for reference but is deprecated. Use Terraform instead for:
-- Better state tracking
-- Easier rollback
-- More reliable deployments
-- Proper IAM management
+The project uses S3 for Terraform state storage:
+- **Bucket**: `alexa-chatbot-terraform-state-981374387644`
+- **DynamoDB Lock Table**: `alexa-chatbot-terraform-lock`
+- **Encryption**: AES256 server-side encryption enabled
+- **Versioning**: Enabled for state history and rollback capability
+
+See [docs/REMOTE_STATE_SETUP.md](docs/REMOTE_STATE_SETUP.md) for bootstrap instructions.
 
 ## Security Notes
 
