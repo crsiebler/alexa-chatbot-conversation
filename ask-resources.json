@@ -4,20 +4,6 @@
     "default": {
       "skillMetadata": {
         "src": "./skill-package"
-      },
-      "code": {
-        "default": {
-          "src": "./lambda"
-        }
-      },
-      "skillInfrastructure": {
-        "type": "@ask-cli/cfn-deployer",
-        "userConfig": {
-          "runtime": "nodejs20.x",
-          "handler": "index.handler",
-          "templatePath": "./infrastructure/cfn-deployer/skill-stack.yaml",
-          "awsRegion": "us-west-2"
-        }
       }
     }
   }
