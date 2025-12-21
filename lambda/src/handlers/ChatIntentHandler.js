@@ -20,23 +20,15 @@ class ChatIntentHandler {
     }
 
     async handle(handlerInput) {
-        console.log('ChatIntent: Starting handler');
         const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
         const userMessage = Alexa.getSlotValue(handlerInput.requestEnvelope, 'message');
-        
-        console.log('ChatIntent: User message:', userMessage);
         
         // Get existing conversation history
         const conversationHistory = sessionAttributes[CONVERSATION_HISTORY_KEY] || [];
         
-        console.log('ChatIntent: Conversation history length:', conversationHistory.length);
-        
         try {
             // Process message through conversation service
-            console.log('ChatIntent: Calling conversation service');
             const result = await this.conversationService.processMessage(userMessage, conversationHistory);
-            
-            console.log('ChatIntent: Received response from OpenAI');
             
             // Save updated conversation history
             sessionAttributes[CONVERSATION_HISTORY_KEY] = result.conversationHistory;
@@ -48,9 +40,7 @@ class ChatIntentHandler {
                 .getResponse();
                 
         } catch (error) {
-            console.error('ChatIntent Error:', error);
-            console.error('ChatIntent Error Stack:', error.stack);
-            console.error('ChatIntent Error Message:', error.message);
+            console.error('ChatIntent Error:', error.message, error.stack);
             const errorMessage = 'Sorry, I encountered an error while processing your request. Please try again.';
             
             return handlerInput.responseBuilder
